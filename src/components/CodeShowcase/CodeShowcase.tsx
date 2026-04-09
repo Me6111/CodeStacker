@@ -1,4 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  ReactElement,
+  isValidElement,
+  cloneElement,
+} from "react";
 import CodeBlock from "../CodeBlock/CodeBlock";
 import PropsEditor from "./PropsEditor";
 
@@ -33,49 +39,72 @@ const CodeShowcase = <T extends {}>({
     })
   );
 
-  const [propsState, setPropsState] = useState<Partial<T>>({});
+  const [propsState, setPropsState] = useState<Partial<T>>(
+    Object.fromEntries(schema.map((f) => [f.name, f.value]))
+  );
+
   const [isDesktop, setIsDesktop] = useState<boolean>(
     window.innerWidth >= 1024
   );
 
-  useEffect(() => {
-    setPropsState(Object.fromEntries(schema.map((f) => [f.name, f.value])));
-  }, [exampleProps, Component]);
-
-  useEffect(() => {
-    const onResize = () => setIsDesktop(window.innerWidth >= 1024);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  const fields: InputField<any>[] = schema.map((field) => ({
-    ...field,
-    value: propsState[field.name] ?? "",
-    setter: (value: any) =>
-      setPropsState((prev) => ({ ...prev, [field.name]: value })),
-  }));
-
-  const [code, setCode] = useState("");
   const [showCode, setShowCode] = useState(false);
+  const [code, setCode] = useState("");
+
+  useEffect(() => {
+    const onResize = () =>
+      setIsDesktop(window.innerWidth >= 1024);
+
+    window.addEventListener("resize", onResize);
+
+    return () =>
+      window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     const componentName =
-      Component.displayName || Component.name || "Component";
+      Component.displayName ||
+      Component.name ||
+      "Component";
 
     const propStrings = Object.entries(propsState)
       .filter(([, v]) => v !== "" && v !== undefined)
       .map(([key, value]) =>
         typeof value === "string"
-          ? `${key}="${value}"`
-          : `${key}={${value}}`
+          ? `  ${key}="${value}"`
+          : `  ${key}={${value}}`
       );
 
-    setCode(`<${componentName}\n  ${propStrings.join("\n  ")}\n/>`);
+    setCode(
+      `<${componentName}\n${propStrings.join("\n")}\n/>`
+    );
   }, [propsState, Component]);
+
+  const fields: InputField<any>[] = schema.map((field) => ({
+    ...field,
+    value: propsState[field.name] ?? "",
+    setter: (value: any) =>
+      setPropsState((prev) => ({
+        ...prev,
+        [field.name]: value,
+      })),
+  }));
+
+  const renderedElement: ReactElement = (
+    <Component {...(propsState as T)} />
+  );
+
+  const elementWithClass =
+    isValidElement(renderedElement)
+      ? cloneElement(renderedElement, {
+          className: `${
+            renderedElement.props.className ?? ""
+          } RENDEREDINNER`.trim(),
+        })
+      : renderedElement;
 
   return (
     <div
-      className="CodeShowcase"
+      className="CodeShowcase_Outer"
       style={{
         width: "100%",
         height: "100%",
@@ -83,19 +112,25 @@ const CodeShowcase = <T extends {}>({
         flexDirection: "column",
         background: "#000",
         color: "#fff",
+        boxSizing: "border-box",
       }}
     >
       <div
-        className="CodeShowcase_Header"
+        className="CodeShowcase_Title"
         style={{
           flex: "0 0 10%",
           display: "flex",
           alignItems: "center",
           padding: "16px 24px",
           borderBottom: "1px solid #222",
+          boxSizing: "border-box",
         }}
       >
-        <h2 className="CodeShowcase_Title" style={{ margin: 0 }}>
+        <h2
+          style={{
+            margin: 0,
+          }}
+        >
           {Component.displayName || Component.name}
         </h2>
       </div>
@@ -103,19 +138,21 @@ const CodeShowcase = <T extends {}>({
       <div
         className="CodeShowcase_Content"
         style={{
-          flex: "1 1 90%",
+          backgroundColor: "darkBlue",
+
+          width: "100%",
+          height: "100%", 
+
           display: "flex",
           flexDirection: isDesktop ? "row" : "column",
-          gap: "24px",
-          padding: "24px",
+
+          boxSizing: "border-box",
           overflow: "hidden",
         }}
       >
         <div
-          className="CodeShowcase_RenderPreview"
           style={{
-            width: isDesktop ? "50%" : "100%",
-            height: isDesktop ? "100%" : "50%",
+            flex: 1,
             border: "1px solid #222",
             display: "flex",
             alignItems: "center",
@@ -123,14 +160,12 @@ const CodeShowcase = <T extends {}>({
             overflow: "auto",
           }}
         >
-          <Component {...(propsState as T)} />
+          {elementWithClass}
         </div>
 
         <div
-          className="CodeShowcase_SidePanel"
           style={{
-            width: isDesktop ? "50%" : "100%",
-            height: isDesktop ? "100%" : "50%",
+            flex: 1,
             display: "flex",
             flexDirection: "column",
             gap: "12px",
@@ -138,8 +173,9 @@ const CodeShowcase = <T extends {}>({
           }}
         >
           <button
-            className="CodeShowcase_ToggleButton"
-            onClick={() => setShowCode((v) => !v)}
+            onClick={() =>
+              setShowCode((v) => !v)
+            }
             style={{
               padding: "8px 12px",
               borderRadius: "4px",
@@ -149,23 +185,33 @@ const CodeShowcase = <T extends {}>({
               cursor: "pointer",
             }}
           >
-            {showCode ? "Show Settings" : "Show Code"}
+            {showCode
+              ? "Show Settings"
+              : "Show Code"}
           </button>
 
-          <div
-            className="CodeShowcase_PanelContent"
-            style={{ flex: 1, overflow: "auto" }}
-          >
-            {showCode ? (
-              <div className="CodeShowcase_CodePreview">
-                <CodeBlock code={code} language="tsx" />
-              </div>
-            ) : (
-              <div className="CodeShowcase_PropsPreview">
-                <PropsEditor fields={fields} />
-              </div>
-            )}
-          </div>
+          {showCode ? (
+            <div
+              style={{
+                flex: 1,
+                overflow: "auto",
+              }}
+            >
+              <CodeBlock
+                code={code}
+                language="tsx"
+              />
+            </div>
+          ) : (
+            <div
+              style={{
+                flex: 1,
+                overflow: "auto",
+              }}
+            >
+              <PropsEditor fields={fields} />
+            </div>
+          )}
         </div>
       </div>
     </div>

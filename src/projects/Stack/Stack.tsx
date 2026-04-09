@@ -1,20 +1,20 @@
 import React from 'react';
-import './MyStack.css';
+import './Stack.css';
 
 
 import SectionScreen from '../../components/SectionScreen/SectionScreen';
 
 
-import mystack_0 from './mystack_0.jpg';
+import Stack_0 from './Stack_0.jpg';
 import ReadyComponentsMain from './ReadyComponents/ReadyComponentsMain.png';
 
 
-const MyStack = () => {
+const Stack = () => {
   return (
     <main>
       <SectionScreen
-        id="MyStack"
-        Image={{item: mystack_0, stagger: true}}
+        id="Stack"
+        Image={{item: Stack_0, stagger: true}}
         header1={{ text: "My - Stack", stagger: true }} 
         p={{ text: "How to create the best websites", stagger: true }} 
         HeaderFading={true} 
@@ -28,7 +28,7 @@ const MyStack = () => {
         p={{ text: "just copy and paste", stagger: true }} 
         buttonLabel={{
           text: "Explore",
-          href: "/MyStack/ReadyComponents",
+          href: "/Stack/ReadyComponents",
           stagger: true
         }}
         HeaderFading={false}       
@@ -37,4 +37,4 @@ const MyStack = () => {
   );
 };
 
-export default MyStack;
+export default Stack;

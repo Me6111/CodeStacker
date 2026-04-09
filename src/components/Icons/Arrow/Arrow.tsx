@@ -14,54 +14,48 @@ export interface Props {
   transition?: number;
 }
 
-export const arrowPropOptions = {
-  direction: ["top", "bottom", "left", "right"] as Dir[],
+export const arrowPropKeys: (keyof Props)[] = [
+  "width", "height", "notch", "direction", "directionDegrees", "strokeWidth", "strokeColor", "fillColor", "transition"
+];
+
+export const arrowPropOptions: Partial<Record<keyof Props, any[]>> = {
+  direction: ["top", "bottom", "left", "right"],
 };
 
-export const exampleArrowProps: Props = {
-  width: 50,
-  height: 30,
+export const arrowDefaultProps: Props = {
+  width: 60,
+  height: 40,
   notch: 0,
-  direction: "top",
-  directionDegrees: 25,
-  strokeWidth: 0.25,
+  strokeWidth: 1.5,
   strokeColor: "white",
-  fillColor: "red",
+  fillColor: "none",
   transition: 0.25,
 };
 
+export const arrowNumberProps: (keyof Props)[] = [
+  "width", "height", "notch", "directionDegrees", "strokeWidth", "transition",
+];
+
 const directionToDegrees = (dir: Dir) => {
   switch (dir) {
-    case "right":
-      return 90;
-    case "bottom":
-      return 180;
-    case "left":
-      return -90;
-    default:
-      return 0;
+    case "right": return 90;
+    case "bottom": return 180;
+    case "left": return -90;
+    default: return 0;
   }
 };
 
 const Arrow: React.FC<Props> = ({
-  width,
-  height,
-  notch,
+  width = 60,
+  height = 40,
+  notch = 0,
   direction,
   directionDegrees,
-  strokeWidth,
-  strokeColor,
-  fillColor,
-  transition,
+  strokeWidth = 1.5,
+  strokeColor = "white",
+  fillColor = "none",
+  transition = 0.25,
 }) => {
-  const w = width ?? 12;
-  const h = height ?? 8;
-  const n = notch ?? 0;
-  const sw = strokeWidth ?? 0.25;
-  const sc = strokeColor ?? "black";
-  const fc = fillColor ?? "none";
-  const tr = transition ?? 0.25;
-
   const rotateDeg =
     typeof directionDegrees === "number"
       ? directionDegrees
@@ -69,31 +63,26 @@ const Arrow: React.FC<Props> = ({
       ? directionToDegrees(direction)
       : 0;
 
-  const cx = w / 2;
-  const cy = h / 2;
+  const cx = width / 2;
+  const cy = height / 2;
 
   const polygonPoints = [
-    `${cx},${cy - h / 2}`,
-    `${cx - w / 2},${cy + h / 2}`,
-    `${cx},${cy + h / 2 - n}`,
-    `${cx + w / 2},${cy + h / 2}`,
+    `${cx},${cy - height / 2}`,
+    `${cx - width / 2},${cy + height / 2}`,
+    `${cx},${cy + height / 2 - notch}`,
+    `${cx + width / 2},${cy + height / 2}`,
   ].join(" ");
 
   return (
-    <div style={{ width: w, height: h, display: "flex", justifyContent: "center", alignItems: "center" }}>
+    <div className="arrow" style={{ width, height, display: "flex", justifyContent: "center", alignItems: "center" }}>
       <svg
-        width={w}
-        height={h}
-        viewBox={`0 0 ${w} ${h}`}
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
         xmlns="http://www.w3.org/2000/svg"
-        style={{
-          display: "block",
-          transform: `rotate(${rotateDeg}deg)`,
-          transformOrigin: "center",
-          transition: `all ${tr}s ease`,
-        }}
+        style={{ display: "block", transform: `rotate(${rotateDeg}deg)`, transformOrigin: "center center", transition: `all ${transition}s ease` }}
       >
-        <polygon points={polygonPoints} style={{ fill: fc, stroke: sc, strokeWidth: sw }} />
+        <polygon points={polygonPoints} style={{ fill: fillColor, stroke: strokeColor, strokeWidth }} />
       </svg>
     </div>
   );

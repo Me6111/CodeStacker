@@ -34,6 +34,8 @@ const Sidebar = ({
       <div
         className="Sidebar_Field"
         style={{
+          backgroundColor: 'green',
+
           pointerEvents: 'all',
           overflow: 'hidden',
           ...Style__Sidebar_Field,

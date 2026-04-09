@@ -1,12 +1,26 @@
-import React from 'react';
-import './CheckMark.css';
+import React from "react";
 
-interface CheckMarkProps {
+export interface Props {
   size?: number;
-  color?: string;
+  strokeColor?: string;
+  strokeWidth?: number;
 }
 
-const CheckMark: React.FC<CheckMarkProps> = ({ size = 24, color = 'currentColor' }) => {
+export const checkmarkPropKeys: (keyof Props)[] = ["size", "strokeColor", "strokeWidth"];
+
+export const checkmarkDefaultProps: Props = {
+  size: 60,
+  strokeColor: "white",
+  strokeWidth: 2,
+};
+
+export const checkmarkNumberProps: (keyof Props)[] = ["size", "strokeWidth"];
+
+const CheckMark: React.FC<Props> = ({
+  size = 60,
+  strokeColor = "white",
+  strokeWidth = 2,
+}) => {
   return (
     <svg
       width={size}
@@ -14,10 +28,23 @@ const CheckMark: React.FC<CheckMarkProps> = ({ size = 24, color = 'currentColor'
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      stroke={color}
-      className="checkmark-icon"
+      style={{
+        display: "block",
+        strokeLinecap: "round",
+        strokeLinejoin: "round",
+      }}
     >
-      <polyline className="copy-check" points="20 6 9 17 4 12" />
+      <polyline
+        points="20 6 9 17 4 12"
+        style={{
+          stroke: strokeColor,
+          strokeWidth,
+          fill: "none",
+          transform: "scale(0.5, 0.7)",
+          transformBox: "fill-box",
+          transformOrigin: "right",
+        }}
+      />
     </svg>
   );
 };

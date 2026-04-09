@@ -8,7 +8,7 @@ import Img_2_1 from './Img_2_1.png';
 import Img_2_2 from './Img_2_2.png';
 import Img_2_3 from './Img_2_3.png';
 
-import myStack_0 from './mystack_0.jpg';
+import Stack_0 from './Stack_0.jpg';
 
 
 
@@ -81,10 +81,10 @@ const DevBusinessCard = () => {
         p={{ text: "How to write very good quality website", stagger: true }}
         buttonLabel={{
           text: "Learn More",
-          href: "/MyStack",
+          href: "/Stack",
           stagger: true
         }}
-        Image={{ item: myStack_0 }}
+        Image={{ item: Stack_0 }}
       />
       <SectionScreen
         id="Reviews"
