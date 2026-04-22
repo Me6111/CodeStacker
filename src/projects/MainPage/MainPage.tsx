@@ -3,7 +3,6 @@ import Slider from '../../components/Sliders/Slider/Slider';
 import LearnMoreButton from '../../components/Buttons/LearnMoreButton/LearnMoreButton';
 import Nav from '../../components/Nav/Nav';
 import MainMenu from './MainMenu/MainMenu';
-
 import Footer from '../../Footer';
 
 import img0 from './images/0.png';
@@ -79,14 +78,14 @@ const MainPage = () => {
 
       <Slider
         orientation="horizontal"
-        SliderPadContent={
+        SliderPad_Content={
           <div
             ref={sliderPadRef}
             style={{
               position: 'relative',
               width: '100%',
               height: '100%',
-              top: '0',
+              top: 0,
             }}
           >
             <Nav fieldContainer={sliderPadRef.current} />
@@ -94,7 +93,7 @@ const MainPage = () => {
         }
       >
         {fields.map((field, index) => (
-          <Slide key={index}>
+          <div key={index}>
             <div
               style={{
                 width: '100%',
@@ -113,14 +112,20 @@ const MainPage = () => {
               <h1 style={{ fontSize: '36px', fontWeight: 'bold' }}>
                 {field.header1}
               </h1>
-              <p style={{ fontSize: '18px', marginBottom: '20px' }}>{field.p}</p>
-              <LearnMoreButton text={field.buttonLabel} href={field.href || '#'} />
+              <p style={{ fontSize: '18px', marginBottom: '20px' }}>
+                {field.p}
+              </p>
+              <LearnMoreButton
+                text={field.buttonLabel}
+                href={field.href || '#'}
+              />
             </div>
-          </Slide>
+          </div>
         ))}
-        <Slide>
+
+        <div>
           <Footer />
-        </Slide>
+        </div>
       </Slider>
     </div>
   );
