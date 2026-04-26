@@ -12,27 +12,30 @@ interface ComponentsProps {
   sliderPadRef: RefObject<HTMLDivElement>;
 }
 
+const modules = import.meta.glob(
+  "../../../../../components/**/*.{tsx,jsx}"
+);
+
 const Fallback = () => (
   <div style={{ width: "100%", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "white", backgroundColor: "#002159" }}>
     Loading...
   </div>
 );
 
-const componentMap: Record<string, () => Promise<any>> = import.meta.glob(
-  "../../../../../components/**/**.tsx"
-);
-
 function LazyRoute({ category, name }: { category: string; name: string }) {
   const isFlat = cataloguePathType[category] === "flat";
+
   const path = isFlat
     ? `../../../../../components/${category}/${name}.tsx`
     : `../../../../../components/${category}/${name}/${name}.tsx`;
 
-  const importer = componentMap[path];
+  const importer = modules[path];
 
-  if (!importer) return <Fallback />;
+  if (!importer) {
+    return <div style={{ color: "white" }}>Component not found</div>;
+  }
 
-  const Component = React.lazy(importer);
+  const Component = React.lazy(importer as any);
 
   return (
     <Suspense fallback={<Fallback />}>
