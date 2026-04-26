@@ -1,10 +1,10 @@
-import React, { RefObject, Suspense, useCallback } from "react";
+import React, { RefObject, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import Slider from "./../../../../../components/Sliders/Slider/Slider";
 import RouterContainer from "./../../../../../components/RouterContainer/RouterContainer";
 import ResponsiveContainer, { ResponsiveStyle } from "./../../../../../components/ResponsiveContainer/ResponsiveContainer";
 import Nav from "../../../Nav/Nav";
-import Catalogue, { catalogue, cataloguePathType } from "./Catalogue";
+import Catalogue, { cataloguePathType } from "./Catalogue";
 import MainPage from "./MainPage";
 import PreviewComponent from "./PreviewComponent";
 
@@ -18,13 +18,22 @@ const Fallback = () => (
   </div>
 );
 
+const componentMap: Record<string, () => Promise<any>> = import.meta.glob(
+  "../../../../../components/**/**.tsx"
+);
+
 function LazyRoute({ category, name }: { category: string; name: string }) {
   const isFlat = cataloguePathType[category] === "flat";
-  const Component = React.lazy(() =>
-    isFlat
-      ? import(/* @vite-ignore */ `./../../../../../components/${category}/${name}`)
-      : import(/* @vite-ignore */ `./../../../../../components/${category}/${name}/${name}`)
-  );
+  const path = isFlat
+    ? `../../../../../components/${category}/${name}.tsx`
+    : `../../../../../components/${category}/${name}/${name}.tsx`;
+
+  const importer = componentMap[path];
+
+  if (!importer) return <Fallback />;
+
+  const Component = React.lazy(importer);
+
   return (
     <Suspense fallback={<Fallback />}>
       <PreviewComponent element={<Component />} />
