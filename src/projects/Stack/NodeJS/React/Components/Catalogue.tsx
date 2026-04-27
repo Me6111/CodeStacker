@@ -2,56 +2,151 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import Dropdown, { DropdownItem } from "../../../../../components/Dropdown/Dropdown/Dropdown";
 
-export const catalogue: Record<string, string[]> = {
-  Icons: ["Arrow", "CheckMark", "Square", "CopyIcon_Squares"],
-  Sliders: ["Slider"],
-  Inputs: ["InputField"],
-  ValueAdjusters: ["Adjuster_Number", "Adjuster_Color"],
-  Dropdown: ["Dropdown"],
-  Tables: ["Table_0", "Table"]
+type CatalogueNode = string | { [category: string]: CatalogueNode[] };
+
+export type cataloguePathType = string;
+
+export const Components: { [category: string]: CatalogueNode[] } = {
+  Buttons:             ["Button", "CopyButton"],
+  Code:                [
+    "CodeBit",
+    "CodeEditor",
+    {
+      ComponentPreview: ["ComponentPreview", "PreviewComponent", "PropsEditor"],
+    },
+  ],
+  CheckBox:            ["CheckBox"],
+  Dropdown:            ["Dropdown"],
+  Breadcrumb:          ["Breadcrumb"],
+  Icons:               [
+    "CopyIcon_Squares",
+    "HamburgerButton",
+    "Logo",
+    {
+      "SVG Objects": ["SvgContainer", "Icon_X", "Square", "Arrow", "CheckMark"],
+    },
+  ],
+  Inputs:              ["InputField"],
+  Labels:              ["Label", "AriaLabel"],
+  Nav:                 ["Nav"],
+  ResponsiveContainer: ["ResponsiveContainer"],
+  RouterContainer:     ["RouterContainer"],
+  Sidebar:             ["Sidebar"],
+  Sliders:             ["Slider"],
+  Tables:              ["Table", "Table_0"],
+  ToggleField:         ["ToggleField"],
+  ValueAdjusters:      ["Adjuster_Code", "Adjuster_Color", "Adjuster_Number"],
 };
 
-export const cataloguePathType: Record<string, "flat" | "nested"> = {
-  Icons: "nested",
-  Sliders: "nested",
-  Inputs: "flat",
-  ValueAdjusters: "flat",
-  Dropdown: "nested",
-  Tables: "flat",
+const allFiles = import.meta.glob(
+  "./../../../../../components/**/*.tsx",
+  { eager: false }
+);
+
+const fileNameOverrides: Record<string, string> = {
+  InputField:       "Inputs/InputField",
+  Slider:           "Sliders/Slider",
+  Table:            "Tables/Table",
+  Table_0:          "Tables/Table_0",
+  HamburgerButton:  "Icons/HamburgerMenu/HamburgerButton",
+  Logo:             "Icons/Hello/Logo",
+  SvgContainer:     "Icons/SVG Objects/SvgContainer/SvgContainer",
+  Icon_X:           "Icons/SVG Objects/X/Icon_X",
+  Arrow:            "Icons/SVG Objects/Arrow/Arrow",
+  CheckMark:        "Icons/SVG Objects/CheckMark/CheckMark",
+  Square:           "Icons/SVG Objects/Square/Square",
 };
+
+export const resolveImportPath = (name: string): string | null => {
+  const override = fileNameOverrides[name];
+  if (override) {
+    const key = Object.keys(allFiles).find(k => k.endsWith(`/${override}.tsx`));
+    if (key) return key;
+  }
+  const nested = Object.keys(allFiles).find(k => k.endsWith(`/${name}/${name}.tsx`));
+  if (nested) return nested;
+  const flat = Object.keys(allFiles).find(k => k.endsWith(`/${name}.tsx`));
+  return flat ?? null;
+};
+
+const buildDropdownItems = (
+  nodes: CatalogueNode[],
+  onNavigate: (name: string) => void
+): DropdownItem[] =>
+  nodes.map(node => {
+    if (typeof node === "string") {
+      return {
+        label: node,
+        onClick: () => onNavigate(node),
+      };
+    }
+    const [cat, children] = Object.entries(node)[0];
+    return {
+      label: cat,
+      children: buildDropdownItems(children, onNavigate),
+      optionsListPosition: "inside" as const,
+    };
+  });
 
 const Catalogue: React.FC = () => {
   const navigate = useNavigate();
 
-  const handleNavigate = (category: string, name: string) => {
+  const handleNavigate = (name: string) => {
+    const importPath = resolveImportPath(name);
+    if (!importPath) { console.warn(`No file found for component: ${name}`); return; }
     navigate(
-      `/Stack/NodeJS/React/Components/${category}/${name}`,
-      { state: { componentName: name } }
+      `/Stack/NodeJS/React/Components/${name}`,
+      { state: { componentName: name, importPath } }
     );
   };
 
-  const triggerItem: DropdownItem = {
-    label: "Components",
-    children: Object.entries(catalogue).map(([category, items]) => ({
-      label: category,
-      children: items.map((name) => ({
-        label: name,
-        onClick: () => handleNavigate(category, name),
-      })),
-    })),
-  };
-
   return (
-    <div className="Catalogue" style={{ width: "300px", height: "100%" }}>
-      <Dropdown
-        triggerItem={triggerItem}
-        optionsListPosition="inside"
-        Indentation="left, 25px"
-        AllowMultipleMenusOpened={true}
-        RememberOpenedMenus={true}
-        OpenMenu={["click"]}
-        CloseMenu={["click_option_again"]}
-      />
+    <div
+      className="Catalogue"
+      style={{
+        width:           "200px",
+        height:          "100%",
+        backgroundColor: "#0a0a0a",
+        borderRight:     "1px solid #1a1a1a",
+        display:         "flex",
+        flexDirection:   "column",
+        boxSizing:       "border-box",
+        overflow:        "hidden",
+      }}
+    >
+      <div style={{
+        fontSize:      10,
+        fontWeight:    600,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase",
+        color:         "#333",
+        padding:       "14px 12px 10px",
+        borderBottom:  "1px solid #1a1a1a",
+        flexShrink:    0,
+      }}>
+        Components
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none" }}>
+        {Object.entries(Components).map(([category, nodes]) => {
+          const categoryItem: DropdownItem = {
+            label: category,
+            children: buildDropdownItems(nodes, handleNavigate),
+            optionsListPosition: "inside" as const,
+          };
+          
+          return (
+            <Dropdown
+              key={category}
+              triggerItem={categoryItem}
+              optionsListPosition="inside"
+              OpenMenu={["click"]}
+              CloseMenu={["click_toggle"]}
+              AllowMultipleMenusOpened={false}
+              Indentation={15}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 };

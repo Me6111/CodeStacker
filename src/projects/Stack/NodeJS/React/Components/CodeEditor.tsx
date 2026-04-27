@@ -1,8 +1,8 @@
 import React, { useRef, useEffect } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
-import CodeBlock from "../../../../../components/CodeBlock/CodeBlock";
-import { catalogue, cataloguePathType } from "./Catalogue";
+import CodeBlock from "../../../../../components/Code/CodeBlock/CodeBlock";
+import Catalogue, { Components, resolveImportPath } from "./Catalogue";
 
 interface CodeEditorProps {
   componentName?: string;
@@ -114,7 +114,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     disposablesRef.current.forEach(d => d.dispose());
     disposablesRef.current = [];
 
-    const allComponentNames = Object.entries(catalogue).flatMap(([cat, names]) =>
+    const allComponentNames = Object.entries(Catalogue).flatMap(([cat, names]) =>
       names.map(name => ({ name, category: cat }))
     );
 

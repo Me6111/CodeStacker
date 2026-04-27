@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 type TriggerType = 'click' | 'hover' | 'focus';
 
 interface ToggleFieldProps {
+  ToggleElement?: React.ReactNode;
   FieldContent: React.ReactNode;
   FieldLocation?: HTMLElement | null;
   trigger?: TriggerType;
@@ -22,6 +23,7 @@ interface ToggleFieldProps {
 }
 
 const ToggleField: React.FC<ToggleFieldProps> = ({
+  ToggleElement,
   FieldContent,
   FieldLocation,
   trigger = 'click',
@@ -44,7 +46,7 @@ const ToggleField: React.FC<ToggleFieldProps> = ({
   const [mounted, setMounted] = useState(false);
   const open = controlled ? isOpen : internalOpen;
 
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const buttonRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef<HTMLDivElement>(null);
   const openTimeout = useRef<number>();
   const closeTimeout = useRef<number>();
@@ -128,24 +130,17 @@ const ToggleField: React.FC<ToggleFieldProps> = ({
   ) : null;
 
   return (
-    <div className="ToggleField"
-    style={containerStyle}>
-      <button
+    <div className="ToggleField" style={containerStyle}>
+      <div
         ref={buttonRef}
         style={{
-          position: 'relative',
-          zIndex: 1000,
-          width: '40px',
-          height: '40px',
-          border: '2px solid #000',
           cursor: 'pointer',
-          background: 'transparent',
           ...buttonStyle,
         }}
         {...triggerProps}
       >
-        ☰
-      </button>
+        {ToggleElement || '☰'}
+      </div>
       {FieldLocation && field ? createPortal(field, FieldLocation) : field}
     </div>
   );

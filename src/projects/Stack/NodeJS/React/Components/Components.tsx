@@ -4,7 +4,7 @@ import Slider from "./../../../../../components/Sliders/Slider/Slider";
 import RouterContainer from "./../../../../../components/RouterContainer/RouterContainer";
 import ResponsiveContainer, { ResponsiveStyle } from "./../../../../../components/ResponsiveContainer/ResponsiveContainer";
 import Nav from "../../../Nav/Nav";
-import Catalogue, { cataloguePathType } from "./Catalogue";
+import Catalogue from "./Catalogue";
 import MainPage from "./MainPage";
 import PreviewComponent from "./PreviewComponent";
 
@@ -23,13 +23,10 @@ const Fallback = () => (
 );
 
 function LazyRoute({ category, name }: { category: string; name: string }) {
-  const isFlat = cataloguePathType[category] === "flat";
+  const nestedPath = `../../../../../components/${category}/${name}/${name}.tsx`;
+  const flatPath = `../../../../../components/${category}/${name}.tsx`;
 
-  const path = isFlat
-    ? `../../../../../components/${category}/${name}.tsx`
-    : `../../../../../components/${category}/${name}/${name}.tsx`;
-
-  const importer = modules[path];
+  const importer = modules[nestedPath] || modules[flatPath];
 
   if (!importer) {
     return <div style={{ color: "white" }}>Component not found</div>;

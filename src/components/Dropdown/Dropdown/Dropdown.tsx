@@ -1,14 +1,16 @@
 import React, { useState, useRef, useCallback } from "react";
+import ToggleField from "../../ToggleField/ToggleField";
+import InputField from "../../Inputs/InputField";
 
 export type OptionsListPosition = "top" | "bottom" | "left" | "right" | "inside";
 export type OpenMenuMode = "click" | "hover";
-export type CloseMenuMode = "click_option_again" | "click_outside" | "mouse_leave";
+export type CloseMenuMode = "click_toggle" | "hover_toggle" | "mouse_leave" | "click_option" | "hover_option";
 
 export interface DropdownItem {
   label: string;
   children?: DropdownItem[];
   optionsListPosition?: OptionsListPosition;
-  Indentation?: string;
+  Indentation?: string | number;
   element?: React.ReactNode;
   onClick?: () => void;
 }
@@ -19,12 +21,14 @@ export interface OptionItemProps {
   active?: boolean;
   hasChildren?: boolean;
   highlighted?: boolean;
+  onHover?: () => void;
+  onLeave?: () => void;
 }
 
 export interface DropdownProps {
   triggerItem?: DropdownItem;
   optionsListPosition?: OptionsListPosition;
-  Indentation?: string;
+  Indentation?: string | number;
   AllowMultipleMenusOpened?: boolean;
   RememberOpenedMenus?: boolean;
   OpenMenu?: OpenMenuMode[];
@@ -32,167 +36,463 @@ export interface DropdownProps {
   OptionItem?: (p: OptionItemProps) => React.ReactNode;
   searchable?: boolean;
   searchPlaceholder?: string;
+  dynamicPlaceholder?: boolean;
+  showSelectedValue?: boolean;
 }
 
 export interface Props {
   optionsListPosition?: OptionsListPosition;
-  Indentation?: string;
+  Indentation?: string | number;
   AllowMultipleMenusOpened?: boolean;
   RememberOpenedMenus?: boolean;
   searchable?: boolean;
   searchPlaceholder?: string;
+  dynamicPlaceholder?: boolean;
+  showSelectedValue?: boolean;
+  OpenMenu?: OpenMenuMode[];
+  CloseMenu?: CloseMenuMode[];
 }
 
-export const dropdownPropKeys: (keyof Props)[] = ["optionsListPosition", "Indentation", "AllowMultipleMenusOpened", "RememberOpenedMenus", "searchable", "searchPlaceholder"];
-export const dropdownDefaultProps: Props = { optionsListPosition: "inside", Indentation: "", AllowMultipleMenusOpened: false, RememberOpenedMenus: false, searchable: false, searchPlaceholder: "Search..." };
-export const dropdownPropOptions: Partial<Record<keyof Props, any[]>> = { optionsListPosition: ["top", "bottom", "left", "right", "inside"] };
+export const dropdownPropKeys: (keyof Props)[] = [
+  "optionsListPosition",
+  "Indentation",
+  "AllowMultipleMenusOpened",
+  "RememberOpenedMenus",
+  "searchable",
+  "searchPlaceholder",
+  "dynamicPlaceholder",
+  "showSelectedValue",
+  "OpenMenu",
+  "CloseMenu"
+];
 
-const defaultTriggerItem: DropdownItem = { label: "Menu", children: [{ label: "Item 1", onClick: () => {} }, { label: "Item 2", onClick: () => {} }, { label: "Item 3", onClick: () => {} }] };
-
-const parseIndent = (value?: string) => { if (!value) return 0; const [, a] = value.split(",").map(v => v.trim()); return parseInt(a || "0", 10); };
-
-const findItem = (it: DropdownItem, p: string): DropdownItem | null => {
-  if (p === "0") return it;
-  const segs = p.split(".");
-  let cur = it;
-  for (let i = 1; i < segs.length; i++) { if (!cur.children) return null; cur = cur.children[parseInt(segs[i])]; if (!cur) return null; }
-  return cur;
+export const dropdownDefaultProps: Props = {
+  optionsListPosition: "bottom",
+  Indentation: 15,
+  AllowMultipleMenusOpened: false,
+  RememberOpenedMenus: true,
+  searchable: false,
+  searchPlaceholder: "Search...",
+  dynamicPlaceholder: false,
+  showSelectedValue: false,
+  OpenMenu: ["click"],
+  CloseMenu: ["click_toggle"]
 };
 
-const getVisiblePaths = (it: DropdownItem, path: string, openSet: Set<string>, query?: string): string[] => {
-  const children = query ? it.children?.filter(c => c.label.toLowerCase().includes(query.toLowerCase())) : it.children;
-  if (!children) return [];
-  if (path !== "0" && !openSet.has(path)) return [];
-  return children.flatMap((child, i) => { const cp = `${path}.${i}`; return [cp, ...getVisiblePaths(child, cp, openSet, query)]; });
+export const dropdownPropOptions: Partial<Record<keyof Props, any[]>> = {
+  optionsListPosition: ["top", "bottom", "left", "right", "inside"],
+  OpenMenu: [["click"], ["hover"], ["click", "hover"]],
+  CloseMenu: [
+    ["click_toggle"],
+    ["hover_toggle"],
+    ["mouse_leave"],
+    ["click_option"],
+    ["hover_option"],
+    ["click_toggle", "click_option"]
+  ]
 };
 
-const DefaultOptionItem: React.FC<OptionItemProps> = ({ label, onClick, active, hasChildren, highlighted }) => (
-  <div onClick={onClick} style={{ width: "100%", padding: "10px 14px", boxSizing: "border-box", backgroundColor: highlighted ? "#444" : hasChildren && active ? "#2a2a2a" : "#1f1f1f", color: "#f5f5f5", cursor: "pointer", borderBottom: "1px solid #333", fontSize: 14, userSelect: "none", transition: "background-color 0.2s" }}
-    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#444")}
-    onMouseLeave={e => (e.currentTarget.style.backgroundColor = highlighted ? "#444" : hasChildren && active ? "#2a2a2a" : "#1f1f1f")}
-  >{label}</div>
-);
+const generateNestedItems = (
+  prefix: string,
+  currentDepth: number,
+  maxDepth: number
+): DropdownItem[] => {
+  if (currentDepth > maxDepth) {
+    return [];
+  }
 
-const Wrapper: React.FC<{ children: React.ReactNode; position?: OptionsListPosition; indent: number }> = ({ children, position = "inside", indent }) => (
-  <div style={{ marginLeft: indent, ...(position === "inside" ? { display: "flex", flexDirection: "column", width: "100%" } : { position: "absolute", top: position === "bottom" ? "100%" : undefined, bottom: position === "top" ? "100%" : undefined, left: position === "right" ? "100%" : 0, right: position === "left" ? "100%" : undefined, zIndex: 1000, display: "flex", flexDirection: "column", width: "100%" }) }}>{children}</div>
+  return [0, 1, 2].map((i) => {
+    const label = `${prefix}${i}`;
+    const children = generateNestedItems(label, currentDepth + 1, maxDepth);
+
+    return {
+      label,
+      children: children.length > 0 ? children : undefined,
+      onClick:
+        children.length === 0
+          ? () => console.log(`Clicked: ${label}`)
+          : undefined
+    };
+  });
+};
+
+const defaultTriggerItem: DropdownItem = {
+  label: "0",
+  children: generateNestedItems("0", 1, 4)
+};
+
+const parseIndent = (value?: string | number) => {
+  if (!value) return 0;
+  if (typeof value === "number") return value;
+  const parts = String(value)
+    .split(",")
+    .map((v) => v.trim());
+  return parseInt(parts[parts.length - 1] || "0", 10);
+};
+
+const DefaultOptionItem: React.FC<OptionItemProps> = ({
+  label,
+  onClick,
+  active,
+  hasChildren,
+  highlighted,
+  onHover,
+  onLeave
+}) => (
+  <div
+    onClick={onClick}
+    onMouseEnter={onHover}
+    onMouseLeave={onLeave}
+    style={{
+      width: "100%",
+      padding: "10px 14px",
+      boxSizing: "border-box",
+      backgroundColor: highlighted
+        ? "#444"
+        : hasChildren && active
+        ? "#2a2a2a"
+        : "#1f1f1f",
+      color: "#f5f5f5",
+      cursor: "pointer",
+      borderBottom: "1px solid #333",
+      fontSize: 14,
+      userSelect: "none",
+      transition: "background-color 0.2s",
+      display: "flex",
+      alignItems: "center",
+      gap: "8px"
+    }}
+  >
+    {hasChildren && <span style={{ opacity: 0.6 }}>{active ? "▼" : "▶"}</span>}
+    {label}
+  </div>
 );
 
 interface NodeProps {
-  item: DropdownItem; config: DropdownProps; path: string;
+  item: DropdownItem;
+  config: DropdownProps;
+  path: string;
   openSet: React.MutableRefObject<Set<string>>;
-  searchQuery?: string; onSearchChange?: (v: string) => void;
-  forceOpen?: boolean; onToggle?: (v: boolean) => void;
-  onLeafClick?: () => void; isRoot?: boolean;
-  highlightedPath: string | null; setHighlightedPath: (p: string | null) => void;
-  containerRef?: React.RefObject<HTMLDivElement>; forceUpdate: () => void;
+  searchQuery?: string;
+  onSearchChange?: (v: string) => void;
+  selectedValue?: string;
+  onSelectedValueChange?: (v: string) => void;
+  hoverPlaceholder?: string;
+  onHoverPlaceholderChange?: (v: string) => void;
+  forceOpen?: boolean;
+  onToggle?: (v: boolean) => void;
+  onLeafClick?: () => void;
+  isRoot?: boolean;
+  forceUpdate: () => void;
 }
 
-const Node: React.FC<NodeProps> = ({ item, config, path, openSet, searchQuery, onSearchChange, forceOpen, onToggle, onLeafClick, isRoot, highlightedPath, setHighlightedPath, containerRef, forceUpdate }) => {
-  const { optionsListPosition, Indentation, AllowMultipleMenusOpened = false, RememberOpenedMenus = false, OpenMenu, CloseMenu, OptionItem, searchable, searchPlaceholder } = config;
+const Node: React.FC<NodeProps> = ({
+  item,
+  config,
+  path,
+  openSet,
+  searchQuery,
+  onSearchChange,
+  selectedValue,
+  onSelectedValueChange,
+  hoverPlaceholder,
+  onHoverPlaceholderChange,
+  forceOpen,
+  onToggle,
+  onLeafClick,
+  isRoot,
+  forceUpdate
+}) => {
+  const {
+    Indentation,
+    AllowMultipleMenusOpened = false,
+    RememberOpenedMenus = true,
+    OpenMenu = ["click"],
+    CloseMenu = ["click_toggle"],
+    OptionItem,
+    searchable,
+    searchPlaceholder,
+    dynamicPlaceholder,
+    showSelectedValue
+  } = config;
+
+  const optionsListPosition = item.optionsListPosition ?? config.optionsListPosition ?? "bottom";
   const indent = parseIndent(item.Indentation ?? Indentation);
-  const position = item.optionsListPosition ?? optionsListPosition;
   const hasChildren = !!item.children?.length;
-  const filteredChildren = searchQuery ? item.children?.filter(c => c.label.toLowerCase().includes(searchQuery.toLowerCase())) : item.children;
+
+  const filterItems = (items: DropdownItem[], query: string): DropdownItem[] => {
+    if (!query) return items;
+    
+    return items
+      .map((child) => {
+        const matchesLabel = child.label.toLowerCase().includes(query.toLowerCase());
+        const filteredChildren = child.children
+          ? filterItems(child.children, query)
+          : [];
+        
+        if (matchesLabel || filteredChildren.length > 0) {
+          return {
+            ...child,
+            children: filteredChildren.length > 0 ? filteredChildren : child.children
+          };
+        }
+        return null;
+      })
+      .filter((item): item is DropdownItem => item !== null);
+  };
+
+  const filteredChildren = searchQuery && item.children
+    ? filterItems(item.children, searchQuery)
+    : item.children;
+
   const isOpen = forceOpen !== undefined ? forceOpen : openSet.current.has(path);
 
   const setOpen = (value: boolean) => {
     onToggle?.(value);
-    if (value) openSet.current.add(path);
-    else { openSet.current.delete(path); if (!RememberOpenedMenus) openSet.current.forEach(k => { if (k.startsWith(path + ".")) openSet.current.delete(k); }); }
+    if (value) {
+      openSet.current.add(path);
+      if (!AllowMultipleMenusOpened) {
+        const parentPath = path.substring(0, path.lastIndexOf("."));
+        openSet.current.forEach((k) => {
+          if (k !== path && k.startsWith(parentPath + ".") && k.split(".").length === path.split(".").length) {
+            openSet.current.delete(k);
+          }
+        });
+      }
+    } else {
+      openSet.current.delete(path);
+      if (!RememberOpenedMenus) {
+        openSet.current.forEach((k) => {
+          if (k.startsWith(path + ".")) openSet.current.delete(k);
+        });
+      }
+    }
     forceUpdate();
   };
 
-  const toggleClick = () => {
-    if (item.onClick) { item.onClick(); onLeafClick?.(); return; }
-    if (!hasChildren) return;
-    if (isOpen && CloseMenu?.includes("click_option_again")) setOpen(false);
-    else if (!isOpen && OpenMenu?.includes("click")) setOpen(true);
+  const handleOptionClick = (childItem: DropdownItem) => {
+    if (childItem.onClick) {
+      childItem.onClick();
+      if (showSelectedValue && onSelectedValueChange) {
+        onSelectedValueChange(childItem.label);
+      }
+      if (CloseMenu?.includes("click_option")) {
+        setOpen(false);
+      }
+      onLeafClick?.();
+    }
   };
 
-  const showSearch = isRoot && searchable && isOpen;
+  const handleOptionHover = (childLabel: string) => {
+    if (dynamicPlaceholder && onHoverPlaceholderChange) {
+      onHoverPlaceholderChange(childLabel);
+    }
+  };
 
-  const trigger = showSearch ? (
-    <input autoFocus type="text" value={searchQuery ?? ""} placeholder={searchPlaceholder ?? "Search..."} onChange={e => onSearchChange?.(e.target.value)}
-      onBlur={e => { const rt = e.relatedTarget as Node | null; if (containerRef?.current && rt && containerRef.current.contains(rt)) return; onToggle?.(false); onSearchChange?.(""); setHighlightedPath(null); }}
-      style={{ width: "100%", padding: "10px 14px", boxSizing: "border-box", backgroundColor: "#1f1f1f", color: "#f5f5f5", border: "none", borderBottom: "1px solid #333", fontSize: 14, outline: "none" }}
+  const handleOptionLeave = () => {
+    if (dynamicPlaceholder && onHoverPlaceholderChange) {
+      onHoverPlaceholderChange("");
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (CloseMenu?.includes("mouse_leave") && isOpen) {
+      setOpen(false);
+    }
+  };
+
+  const showSearch = isRoot && searchable;
+  const displayPlaceholder = hoverPlaceholder || (showSelectedValue && selectedValue) || searchPlaceholder || "Search...";
+
+  if (!hasChildren) {
+    const triggerElement =
+      item.element ??
+      (OptionItem ?? DefaultOptionItem)({
+        label: item.label,
+        onClick: () => handleOptionClick(item),
+        active: false,
+        hasChildren: false,
+        highlighted: false,
+        onHover: () => handleOptionHover(item.label),
+        onLeave: handleOptionLeave
+      });
+
+    return <div style={{ width: "100%" }}>{triggerElement}</div>;
+  }
+
+  const toggleElement = showSearch ? (
+    <InputField
+      type="string"
+      value={searchQuery ?? ""}
+      placeholder={displayPlaceholder}
+      setter={(v) => onSearchChange?.(v)}
     />
   ) : (
-    item.element ?? (OptionItem ?? DefaultOptionItem)({ label: item.label, onClick: toggleClick, active: isOpen, hasChildren, highlighted: highlightedPath === path })
+    item.element ??
+    (OptionItem ?? DefaultOptionItem)({
+      label: item.label,
+      onClick: () => {},
+      active: isOpen,
+      hasChildren: true,
+      highlighted: false
+    })
   );
 
-  return (
-    <div style={{ position: "relative", width: "100%" }}
-      onMouseEnter={() => { if (hasChildren && OpenMenu?.includes("hover")) setOpen(true); }}
-      onMouseLeave={() => { if (hasChildren && CloseMenu?.includes("mouse_leave")) setOpen(false); }}
+  const isInsideMode = optionsListPosition === "inside";
+
+  const getPositionStyles = (): React.CSSProperties => {
+    if (isInsideMode) {
+      return {};
+    }
+
+    switch (optionsListPosition) {
+      case "bottom":
+        return {
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          zIndex: 1000,
+          backgroundColor: "#1a1a1a"
+        };
+      case "top":
+        return {
+          position: "absolute",
+          bottom: "100%",
+          left: 0,
+          zIndex: 1000,
+          backgroundColor: "#1a1a1a"
+        };
+      case "left":
+        return {
+          position: "absolute",
+          top: 0,
+          right: "100%",
+          zIndex: 1000,
+          backgroundColor: "#1a1a1a"
+        };
+      case "right":
+        return {
+          position: "absolute",
+          top: 0,
+          left: "100%",
+          zIndex: 1000,
+          backgroundColor: "#1a1a1a"
+        };
+      default:
+        return {
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          zIndex: 1000,
+          backgroundColor: "#1a1a1a"
+        };
+    }
+  };
+
+  const fieldContent = filteredChildren && filteredChildren.length > 0 ? (
+    <div 
+      style={{ 
+        width: "100%",
+        marginLeft: isInsideMode ? indent : 0,
+        ...getPositionStyles()
+      }}
+      onMouseLeave={handleMouseLeave}
     >
-      <div onClick={showSearch ? undefined : toggleClick}>{trigger}</div>
-      {isOpen && !!filteredChildren?.length && (
-        <Wrapper position={position} indent={indent}>
-          {filteredChildren.map((child, i) => {
-            const cp = `${path}.${i}`;
-            if (!AllowMultipleMenusOpened) openSet.current.forEach(k => { if (k.startsWith(path + ".") && k !== cp) openSet.current.delete(k); });
-            return <Node key={cp} item={child} config={config} path={cp} openSet={openSet} searchQuery={searchQuery} onLeafClick={onLeafClick} highlightedPath={highlightedPath} setHighlightedPath={setHighlightedPath} containerRef={containerRef} forceUpdate={forceUpdate} />;
-          })}
-        </Wrapper>
-      )}
+      {filteredChildren.map((child, i) => {
+        const cp = `${path}.${i}`;
+        return (
+          <Node
+            key={cp}
+            item={child}
+            config={config}
+            path={cp}
+            openSet={openSet}
+            searchQuery={searchQuery}
+            selectedValue={selectedValue}
+            onSelectedValueChange={onSelectedValueChange}
+            hoverPlaceholder={hoverPlaceholder}
+            onHoverPlaceholderChange={onHoverPlaceholderChange}
+            onLeafClick={onLeafClick}
+            forceUpdate={forceUpdate}
+          />
+        );
+      })}
+    </div>
+  ) : null;
+
+  const trigger = OpenMenu?.includes("click") ? "click" : OpenMenu?.includes("hover") ? "hover" : "click";
+
+  if (showSearch) {
+    return (
+      <div style={{ width: "100%", position: isInsideMode ? "static" : "relative" }}>
+        {toggleElement}
+        {isOpen && fieldContent}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ width: "100%", position: isInsideMode ? "static" : "relative" }}>
+      <ToggleField
+        ToggleElement={toggleElement}
+        FieldContent={fieldContent}
+        trigger={trigger}
+        isOpen={isOpen}
+        onOpen={() => setOpen(true)}
+        onClose={() => {
+          if (CloseMenu?.includes("click_toggle") || CloseMenu?.includes("hover_toggle")) {
+            setOpen(false);
+          }
+        }}
+        closeOnBlur={false}
+        buttonStyle={{
+          width: "100%",
+          padding: 0
+        }}
+        containerStyle={{
+          width: "100%"
+        }}
+      />
     </div>
   );
 };
 
 const Dropdown: React.FC<DropdownProps> = (config) => {
   const openSet = useRef<Set<string>>(new Set());
-  const containerRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedValue, setSelectedValue] = useState("");
+  const [hoverPlaceholder, setHoverPlaceholder] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [highlightedPath, setHighlightedPath] = useState<string | null>(null);
   const [, setTick] = useState(0);
-  const forceUpdate = useCallback(() => setTick(t => t + 1), []);
+  const forceUpdate = useCallback(() => setTick((t) => t + 1), []);
   const item = config.triggerItem ?? defaultTriggerItem;
   const { searchable } = config;
-  const isAnyOpen = searchable ? isOpen : openSet.current.size > 0;
-
-  const closeAndChildren = useCallback((p: string) => { openSet.current.delete(p); openSet.current.forEach(k => { if (k.startsWith(p + ".")) openSet.current.delete(k); }); }, []);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    const visible = getVisiblePaths(item, "0", openSet.current, searchable ? searchQuery : undefined);
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (!isAnyOpen && searchable) { setIsOpen(true); return; }
-      if (!visible.length) return;
-      setHighlightedPath(highlightedPath === null ? visible[0] : visible[(visible.indexOf(highlightedPath) + 1) % visible.length]);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (!visible.length) return;
-      setHighlightedPath(highlightedPath === null ? visible[visible.length - 1] : visible[(visible.indexOf(highlightedPath) - 1 + visible.length) % visible.length]);
-    } else if (e.key === "ArrowRight") {
-      e.preventDefault();
-      if (!highlightedPath) return;
-      if (findItem(item, highlightedPath)?.children?.length) { openSet.current.add(highlightedPath); setHighlightedPath(highlightedPath + ".0"); forceUpdate(); }
-    } else if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      if (!highlightedPath) return;
-      if (openSet.current.has(highlightedPath)) { closeAndChildren(highlightedPath); forceUpdate(); }
-      else { const parts = highlightedPath.split("."); if (parts.length <= 2) return; const parent = parts.slice(0, -1).join("."); closeAndChildren(parent); setHighlightedPath(parent); forceUpdate(); }
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      if (!highlightedPath) return;
-      const hItem = findItem(item, highlightedPath);
-      if (hItem?.onClick) { hItem.onClick(); if (searchable) { setIsOpen(false); setSearchQuery(""); setHighlightedPath(null); } }
-      else if (hItem?.children?.length) { if (openSet.current.has(highlightedPath)) closeAndChildren(highlightedPath); else openSet.current.add(highlightedPath); forceUpdate(); }
-    } else if (e.key === "Escape") {
-      if (searchable) { setIsOpen(false); setSearchQuery(""); setHighlightedPath(null); }
-    }
-  }, [isAnyOpen, highlightedPath, searchQuery, searchable, item, forceUpdate, closeAndChildren]);
 
   return (
-    <div ref={containerRef} onKeyDown={handleKeyDown} tabIndex={0} style={{ outline: "none", width: "100%" }}>
-      <Node item={item} config={config} path="0" openSet={openSet}
-        searchQuery={searchable ? searchQuery : undefined} onSearchChange={searchable ? setSearchQuery : undefined}
-        forceOpen={searchable ? isOpen : undefined} onToggle={searchable ? setIsOpen : undefined}
-        onLeafClick={() => { if (searchable) { setIsOpen(false); setSearchQuery(""); setHighlightedPath(null); } }}
-        isRoot highlightedPath={highlightedPath} setHighlightedPath={setHighlightedPath}
-        containerRef={containerRef} forceUpdate={forceUpdate}
+    <div style={{ outline: "none", width: "100%", backgroundColor: "#1a1a1a", borderRadius: "4px" }}>
+      <Node
+        item={item}
+        config={config}
+        path="0"
+        openSet={openSet}
+        searchQuery={searchable ? searchQuery : undefined}
+        onSearchChange={searchable ? setSearchQuery : undefined}
+        selectedValue={selectedValue}
+        onSelectedValueChange={setSelectedValue}
+        hoverPlaceholder={hoverPlaceholder}
+        onHoverPlaceholderChange={setHoverPlaceholder}
+        forceOpen={searchable ? isOpen : undefined}
+        onToggle={searchable ? setIsOpen : undefined}
+        onLeafClick={() => {
+          if (searchable) {
+            setIsOpen(false);
+            if (!config.showSelectedValue) {
+              setSearchQuery("");
+            }
+          }
+        }}
+        isRoot
+        forceUpdate={forceUpdate}
       />
     </div>
   );

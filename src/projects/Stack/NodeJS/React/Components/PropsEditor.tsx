@@ -1,5 +1,5 @@
 import React from "react";
-import CodeBit from "./../../../../../components/CodeBit/CodeBit";
+import CodeBit from "../../../../../components/Code/CodeBit/CodeBit";
 import InputField, { FieldType } from "./../../../../../components/Inputs/InputField";
 import Dropdown, { DropdownItem } from "../../../../../components/Dropdown/Dropdown/Dropdown";
 

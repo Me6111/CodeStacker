@@ -154,7 +154,7 @@ const InputField: React.FC<InputFieldSpec> = (props) => {
         triggerItem={triggerItem}
         optionsListPosition="inside"
         OpenMenu={["click"]}
-        CloseMenu={["click_option_again"]}
+        CloseMenu={["click_option"]}
         AllowMultipleMenusOpened={false}
         RememberOpenedMenus={false}
       />

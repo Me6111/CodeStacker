@@ -1,7 +1,7 @@
 import React from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import CopyButton from "../Buttons/CopyButton/CopyButton";
+import CopyButton from "../../Buttons/CopyButton/CopyButton";
 
 interface CodeBlockProps {
   code?: string | unknown;
