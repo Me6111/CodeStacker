@@ -5,7 +5,7 @@ type TriggerType = 'click' | 'hover' | 'focus';
 
 interface ToggleFieldProps {
   ToggleElement?: React.ReactNode;
-  FieldContent: React.ReactNode;
+  FieldContent?: React.ReactNode;
   FieldLocation?: HTMLElement | null;
   trigger?: TriggerType;
   isOpen?: boolean;
@@ -17,9 +17,12 @@ interface ToggleFieldProps {
   openDelay?: number;
   closeDelay?: number;
   buttonStyle?: CSSProperties;
+  buttonStyleWhenOpen?: CSSProperties;
   containerStyle?: CSSProperties;
   hideOnDesktop?: boolean;
   mobileBreakpoint?: number;
+  showBackdrop?: boolean;
+  backdropStyle?: CSSProperties;
 }
 
 const ToggleField: React.FC<ToggleFieldProps> = ({
@@ -36,9 +39,12 @@ const ToggleField: React.FC<ToggleFieldProps> = ({
   openDelay = 0,
   closeDelay = 0,
   buttonStyle,
+  buttonStyleWhenOpen,
   containerStyle,
   hideOnDesktop = false,
   mobileBreakpoint = 768,
+  showBackdrop = false,
+  backdropStyle,
 }) => {
   const controlled = isOpen !== undefined;
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
@@ -123,27 +129,99 @@ const ToggleField: React.FC<ToggleFieldProps> = ({
   if (!mounted) return null;
   if (hideOnDesktop && !isMobile) return null;
 
+  const defaultContent = (
+    <div style={{ padding: '20px', backgroundColor: '#1a1a1a', color: '#fff', borderRadius: '4px', border: '1px solid #333' }}>
+      <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Toggle Field Content</h3>
+      <p style={{ margin: 0, fontSize: '14px' }}>Edit the FieldContent prop to customize this area.</p>
+    </div>
+  );
+
+  const backdrop = showBackdrop && open ? (
+    <div
+      onClick={handleClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 998,
+        ...backdropStyle,
+      }}
+    />
+  ) : null;
+
   const field = open ? (
-    <div ref={fieldRef}>
-      {FieldContent}
+    <div ref={fieldRef} style={{ width: '100%', marginTop: '10px' }}>
+      {FieldContent || defaultContent}
     </div>
   ) : null;
 
+  const activeButtonStyle = open && buttonStyleWhenOpen ? buttonStyleWhenOpen : buttonStyle;
+
   return (
-    <div className="ToggleField" style={containerStyle}>
-      <div
-        ref={buttonRef}
-        style={{
-          cursor: 'pointer',
-          ...buttonStyle,
-        }}
-        {...triggerProps}
-      >
-        {ToggleElement || '☰'}
+    <>
+      {backdrop}
+      <div className="ToggleField" style={{ position: 'relative', zIndex: open ? 999 : 1, ...containerStyle }}>
+        <div
+          ref={buttonRef}
+          style={{
+            cursor: 'pointer',
+            padding: '10px 15px',
+            backgroundColor: '#1a1a1a',
+            border: '1px solid #333',
+            borderRadius: '4px',
+            color: '#fff',
+            fontSize: '16px',
+            userSelect: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            ...activeButtonStyle,
+          }}
+          {...triggerProps}
+        >
+          {ToggleElement || (
+            <>
+              <span>{open ? '▼' : '▶'}</span>
+              <span>Toggle</span>
+            </>
+          )}
+        </div>
+        {FieldLocation && field ? createPortal(field, FieldLocation) : field}
       </div>
-      {FieldLocation && field ? createPortal(field, FieldLocation) : field}
-    </div>
+    </>
   );
 };
+
+export const togglefieldDefaultProps = {
+  trigger: 'click' as TriggerType,
+  defaultOpen: false,
+  closeOnSelect: false,
+  closeOnBlur: true,
+  openDelay: 0,
+  closeDelay: 0,
+  hideOnDesktop: false,
+  mobileBreakpoint: 768,
+  showBackdrop: false,
+};
+
+export const togglefieldPropKeys = [
+  'trigger',
+  'defaultOpen',
+  'closeOnSelect',
+  'closeOnBlur',
+  'openDelay',
+  'closeDelay',
+  'hideOnDesktop',
+  'mobileBreakpoint',
+  'showBackdrop',
+];
+
+export const togglefieldPropOptions = {
+  trigger: ['click', 'hover', 'focus'],
+};
+
+export const togglefieldNumberProps = ['openDelay', 'closeDelay', 'mobileBreakpoint'];
+
+export const togglefieldCodeProps: string[] = [];
 
 export default ToggleField;

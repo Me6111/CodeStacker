@@ -277,9 +277,8 @@ const Node: React.FC<NodeProps> = ({
         onSelectedValueChange(childItem.label);
       }
       if (CloseMenu?.includes("click_option")) {
-        setOpen(false);
+        onLeafClick?.();
       }
-      onLeafClick?.();
     }
   };
 
@@ -466,10 +465,16 @@ const Dropdown: React.FC<DropdownProps> = (config) => {
   const [, setTick] = useState(0);
   const forceUpdate = useCallback(() => setTick((t) => t + 1), []);
   const item = config.triggerItem ?? defaultTriggerItem;
-  const { searchable } = config;
+  const { searchable, CloseMenu = ["click_toggle"] } = config;
 
   return (
-    <div style={{ outline: "none", width: "100%", backgroundColor: "#1a1a1a", borderRadius: "4px" }}>
+    <div style={{ 
+      outline: "none", 
+      width: "100%", 
+      minWidth: "120px", 
+      backgroundColor: "#1a1a1a", 
+      borderRadius: "4px"
+    }}>
       <Node
         item={item}
         config={config}
@@ -484,6 +489,10 @@ const Dropdown: React.FC<DropdownProps> = (config) => {
         forceOpen={searchable ? isOpen : undefined}
         onToggle={searchable ? setIsOpen : undefined}
         onLeafClick={() => {
+          if (CloseMenu.includes("click_option")) {
+            openSet.current.clear();
+            forceUpdate();
+          }
           if (searchable) {
             setIsOpen(false);
             if (!config.showSelectedValue) {

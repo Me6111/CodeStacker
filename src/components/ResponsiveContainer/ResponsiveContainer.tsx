@@ -20,6 +20,7 @@ interface ResponsiveContainerProps {
   children?: ReactNode;
   className?: string;
   baseStyle?: React.CSSProperties;
+  style?: React.CSSProperties;
 }
 
 const PRESETS: Record<BreakpointPreset, number> = {
@@ -38,11 +39,31 @@ function matchesMinSize(size: SizeConstraint, w: number, h: number): boolean {
   return w >= minW && h >= minH;
 }
 
+function mergeStyles(acc: React.CSSProperties, newStyle: React.CSSProperties): React.CSSProperties {
+  const merged = { ...acc };
+
+  const hasFlexShorthand = 'flex' in newStyle;
+  const hasFlexProperties = 'flexGrow' in newStyle || 'flexShrink' in newStyle || 'flexBasis' in newStyle;
+
+  if (hasFlexShorthand) {
+    delete merged.flexGrow;
+    delete merged.flexShrink;
+    delete merged.flexBasis;
+  }
+
+  if (hasFlexProperties) {
+    delete merged.flex;
+  }
+
+  return { ...merged, ...newStyle };
+}
+
 export default function ResponsiveContainer({
   ResponsiveStyles,
   children,
   className,
   baseStyle = {},
+  style = {},
 }: ResponsiveContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [screenSize, setScreenSize] = useState({ w: window.innerWidth, h: window.innerHeight });
@@ -72,13 +93,15 @@ export default function ResponsiveContainer({
         : containerSize;
 
     if (matchesMinSize(entry.MinSize, w, h)) {
-      return { ...acc, ...entry.Style };
+      return mergeStyles(acc, entry.Style);
     }
     return acc;
   }, baseStyle);
 
+  const finalStyle = mergeStyles(computedStyle, style);
+
   return (
-    <div ref={containerRef} className={className} style={computedStyle}>
+    <div ref={containerRef} className={className} style={finalStyle}>
       {children}
     </div>
   );

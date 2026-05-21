@@ -1,8 +1,15 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MainPage from "./projects/MainPage/MainPage";
-import Components from "./projects/Stack/NodeJS/React/Components/Components";
 
+import Components from "./projects/Stack/NodeJS/React/Components/Components";
+//import SVGcreator from "./projects/SVGcreator/SVGcreator"; 
+//<Route path="/SVGcreator/*" element={<SVGcreator />} />
+
+
+
+//import SVGcreator from "./projects/SVGcreator/SVGcreator/src/"; 
+import SVGCreator from "./projects/SVGcreator/src/features/svgcreator";
 
 
 function App() {
@@ -11,6 +18,10 @@ function App() {
       <Routes>
         <Route path="/" element={<MainPage orientation="vertical" />} />
         <Route path="/Stack/NodeJS/React/Components/*" element={<Components />} />
+
+        <Route path="/SVGcreator/*" element={<SVGCreator />} />
+
+
       </Routes>
     </Router>
   );

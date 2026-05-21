@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ToggleField from '../../../components/ToggleField/ToggleField';
-import Catalogue from '../NodeJS/React/Components/Catalogue';
+import Catalogue from '../NodeJS/React/Components/Catalogue/Catalogue';
 
 interface NavProps {
   fieldContainer?: HTMLElement | null;

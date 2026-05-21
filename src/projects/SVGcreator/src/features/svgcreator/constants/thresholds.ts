@@ -1,0 +1,6 @@
+export const THRESHOLDS = {
+  POINT_SELECT: 10,
+  LINE_SELECT: 10,
+  LINE_DRAG: 15,
+  CLOSE_POLYGON: 10,
+};

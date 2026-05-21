@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import ToggleField from "../ToggleField/ToggleField";
-import CodeEditor from "../../projects/Stack/NodeJS/React/Components/CodeEditor";
+import CodeEditor from "../Code/CodeEditor/CodeEditor";
 
 interface Adjuster_CodeProps {
   value: string;

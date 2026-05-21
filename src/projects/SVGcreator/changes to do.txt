@@ -1,0 +1,24 @@
+Things to do: 
+
+1.
+Detail tool doesn't cooperate correctly with the select tool - once selection is confirmed and the detail tool intended to use - it should modify the detail level inside of the actual selection area, not the whole polygon. Selection area is always the superior part over even the whole svg. there should exist hierarchy of objects. selection is specific because it can be done only within an object being selected currently within the object map.
+
+2.
+Thrash bin icon
+Deleting the object. 
+Should be the first tool of the selection object's list of tools
+And it also should be next to every object within object map.
+It should be possible to use it to delete point, line polygon or the entire svg object
+
+3. 
+Behavior of selection object
+once the selection object is confirmed, and moved - it should affect only the fragment highlighted at the moment of confirmation. currently if the selection area is moved after confirmation, the elements going into its range are highlighted also - they're not moved, only the fragment highlighted in the moment when the selection object was confirmed - but they shouldn't becoming highlighted when going into a range of a confirmed selection object. confirmed selection object is supposed to work only for the svg parts chosen from objectmap which were within its range in the moment of confirmation
+
+
+4.
+Select tool and undo redo tool.
+Once the selected area was edited like moved or rotated or whatever - undo is going back to the step from before chages were done, but there is no redo option to restore the changes
+
+5. 
+Select all. 
+There should be an option select all, which is the automatically pressed one once the element is cbosen from objectmap, then it can be changed to square, polygon or whatever, but selection happens automatically and it is selection of the whole object from objectmap like the individual polygon or svg etc.

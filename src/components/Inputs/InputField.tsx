@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import Dropdown, { DropdownItem } from "../Dropdown/Dropdown/Dropdown";
+import React from "react";
 import Adjuster_Number from "./../ValueAdjusters/Adjuster_Number";
 import Adjuster_Color from "./../ValueAdjusters/Adjuster_Color";
 import Adjuster_Code from "./../ValueAdjusters/Adjuster_Code";
@@ -28,6 +27,9 @@ export type InputFieldSpec = Props & {
   min?: number;
   max?: number;
   step?: number;
+  isNumber?: boolean;
+  isColor?: boolean;
+  isCode?: boolean;
 };
 
 const baseInputStyle: React.CSSProperties = {
@@ -56,19 +58,18 @@ const deserializeValue = (raw: string, originalValue: any): any => {
 };
 
 const InputField: React.FC<InputFieldSpec> = (props) => {
-  const { value, setter, placeholder, min, max, step = 1, options } = props;
+  const { value, setter, placeholder, min, max, step = 1, options, isColor, isNumber, isCode } = props;
   const type = props.type ?? "string";
-  const [filter, setFilter] = useState("");
 
-  if (type === "number") {
+  if (type === "number" || isNumber) {
     return <Adjuster_Number value={value} setter={setter ?? (() => {})} min={min} max={max} step={step} />;
   }
 
-  if (type === "color") {
+  if (type === "color" || isColor) {
     return <Adjuster_Color value={value} setter={setter ?? (() => {})} />;
   }
 
-  if (type === "code") {
+  if (type === "code" || isCode) {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", minWidth: 0 }}>
         <input
@@ -122,42 +123,19 @@ const InputField: React.FC<InputFieldSpec> = (props) => {
   }
 
   if (type === "enum" && options) {
-    const filtered = options.filter(opt =>
-      String(opt).toLowerCase().includes(filter.toLowerCase())
-    );
-
-    const triggerItem: DropdownItem = {
-      label: "",
-      element: (
-        <input
-          type="text"
-          value={filter || value || ""}
-          placeholder={placeholder ?? "Select or type..."}
-          onChange={(e) => {
-            setFilter(e.target.value);
-            setter?.(e.target.value);
-          }}
-          style={baseInputStyle}
-        />
-      ),
-      children: filtered.map((opt) => ({
-        label: String(opt),
-        onClick: () => {
-          setter?.(opt);
-          setFilter("");
-        },
-      })),
-    };
-
     return (
-      <Dropdown
-        triggerItem={triggerItem}
-        optionsListPosition="inside"
-        OpenMenu={["click"]}
-        CloseMenu={["click_option"]}
-        AllowMultipleMenusOpened={false}
-        RememberOpenedMenus={false}
-      />
+      <select
+        value={String(value || "")}
+        onChange={(e) => setter?.(e.target.value)}
+        style={baseInputStyle}
+      >
+        <option value="">{placeholder ?? "Select..."}</option>
+        {options.map((opt, idx) => (
+          <option key={idx} value={String(opt)}>
+            {String(opt)}
+          </option>
+        ))}
+      </select>
     );
   }
 
