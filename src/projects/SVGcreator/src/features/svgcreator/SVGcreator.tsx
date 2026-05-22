@@ -1,5 +1,5 @@
 import React from 'react';
-import { SVGcreatorProvider } from './context/SVGcreatorProvider';
+import { SVGcreatorProvider } from './context/SVGCreatorProvider';
 import ObjectMap from './components/ObjectMap/ObjectMap';
 import Toolbar from './components/Toolbar/Toolbar';
 import Board from './components/Board/Board';
