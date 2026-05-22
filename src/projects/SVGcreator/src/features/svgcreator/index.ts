@@ -1,3 +1,3 @@
-export { default } from './SVGCreator';
-export { SVGCreator } from './SVGCreator';
+export { default } from './SVGcreator';
+export { SVGCreator } from './SVGcreator';
 export * from './types';
